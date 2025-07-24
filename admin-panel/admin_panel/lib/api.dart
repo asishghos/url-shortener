@@ -28,7 +28,8 @@ class DailyClick {
 }
 
 class AnalyticsService {
-  final String _baseUrl = "http://192.168.1.10:5000/api/analytics";
+  final String _baseUrl =
+      "https://url-shortener-a3a7.onrender.com/api/analytics";
 
   // Fetches the list of top 10 most clicked links
   Future<List<TopLink>> getTopLinks() async {
