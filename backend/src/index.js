@@ -6,7 +6,7 @@ import analyticsRoutes from "./routes/analyticsRoutes.js";
 import redis from "./config/redis.js";
 import connectDB from "./config/db.js";
 import cors from "cors";
-import { sendClickEvent } from "./events/producer.js";
+import {sendClickEvent } from "./events/producer.js";
 
 dotenv.config();
 const app = express();
