@@ -31,7 +31,7 @@ app.get("/:shortId", async (req, res) => {
 
     if (longUrl) {
       // still record analytics even if served from cache
-      await sendClickEvent(shortId, req.ip, req.headers['user-agent'], req.get('referer'));
+      await sendClickEvent(shortId, req.ip, { userAgent: req.headers['user-agent'], referrer: req.get('referer') });
       return res.redirect(longUrl);
     }
 
@@ -46,7 +46,7 @@ app.get("/:shortId", async (req, res) => {
           .send("This link has expired and is no longer available.");
       }
       await redis.set(cacheKey, entry.longUrl, { EX: 3600 });
-      await sendClickEvent(shortId, req.ip, req.headers['user-agent'], req.get('referer'));
+      await sendClickEvent(shortId, req.ip, { userAgent: req.headers['user-agent'], referrer: req.get('referer') });
       return res.redirect(entry.longUrl);
     } else {
       return res.status(404).send("Short URL not found");

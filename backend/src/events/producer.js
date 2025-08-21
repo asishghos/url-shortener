@@ -1,8 +1,13 @@
 import { producer } from '../config/kafka.js';
 
+const analyticsEnabled = process.env.ENABLE_ANALYTICS === 'true';
 let kafkaReady = false;
 
 export const initProducer = async () => {
+  if (!analyticsEnabled) {
+    console.info('Analytics disabled. Set ENABLE_ANALYTICS=true to enable Kafka.');
+    return;
+  }
   try {
     await producer.connect();
     kafkaReady = true;
@@ -13,9 +18,9 @@ export const initProducer = async () => {
   }
 };
 
-export const sendClickEvent = async (shortId, ip, extra = {}) => {
-  if (!kafkaReady) return; // no-op when Kafka is down
-  const payload = { shortId, ip, ts: Date.now(), ...extra };
+export const sendClickEvent = async (shortId, ip, meta = {}) => {
+  if (!analyticsEnabled || !kafkaReady) return; // no-op when Kafka is down or disabled
+  const payload = { shortId, ip, ts: Date.now(), ...meta };
   try {
     await producer.send({
       topic: 'click-events',
