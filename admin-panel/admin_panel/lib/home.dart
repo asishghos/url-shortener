@@ -9,27 +9,22 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // Instance of the service to fetch data
   final AnalyticsService _analyticsService = AnalyticsService();
 
-  // Futures to hold the data from the API calls
   late Future<List<TopLink>> _topLinksFuture;
   late Future<List<DailyClick>> _dailyClicksFuture;
 
   @override
   void initState() {
     super.initState();
-    // Fetch data when the widget is first created
     _fetchData();
   }
 
-  // Method to initialize the data fetching process
   void _fetchData() {
     _topLinksFuture = _analyticsService.getTopLinks();
     _dailyClicksFuture = _analyticsService.getDailyClicks();
   }
 
-  // Method to handle pull-to-refresh
   Future<void> _onRefresh() async {
     setState(() {
       _fetchData();
@@ -64,7 +59,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Helper widget for section titles
   Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
@@ -78,7 +72,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Builds the list for Top Links using a FutureBuilder
   Widget _buildTopLinksList() {
     return FutureBuilder<List<TopLink>>(
       future: _topLinksFuture,
@@ -128,7 +121,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Builds the list for Daily Clicks using a FutureBuilder
   Widget _buildDailyClicksList() {
     return FutureBuilder<List<DailyClick>>(
       future: _dailyClicksFuture,
@@ -172,7 +164,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Helper widget to wrap lists in a styled Card
   Widget _buildCard({required Widget child}) {
     return Card(
       elevation: 2,

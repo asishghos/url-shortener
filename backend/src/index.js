@@ -60,7 +60,6 @@ app.get("/:shortId", async (req, res) => {
 const startServer = async () => {
   try {
     await connectDB();
-    // Initialize Kafka producer without blocking app startup
     initProducer().catch((err) => {
       console.warn('Kafka init failed:', err?.message || err);
     });
