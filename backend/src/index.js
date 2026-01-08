@@ -6,8 +6,7 @@ import analyticsRoutes from "./routes/analyticsRoutes.js";
 import redis from "./config/redis.js";
 import connectDB from "./config/db.js";
 import cors from "cors";
-import {sendClickEvent, initProducer } from "./events/producer.js";
-import { startConsumer } from "./events/consumer.js";
+import { trackClick } from "./services/analyticsService.js";
 
 dotenv.config();
 const app = express();
@@ -22,7 +21,18 @@ app.use(express.json());
 app.use("/api", urlRoutes);
 app.use("/api/analytics", analyticsRoutes);
 
+// Health check endpoint
+app.get("/health", (req, res) => {
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
+// Redirect route - must be last to avoid conflicts with API routes
 app.get("/:shortId", async (req, res) => {
+  // Exclude common paths that shouldn't be treated as shortIds
+  const excludedPaths = ['api', 'health', 'favicon.ico'];
+  if (excludedPaths.includes(req.params.shortId)) {
+    return res.status(404).send("Not found");
+  }
   const { shortId } = req.params;
   const cacheKey = `url:${shortId}`;
 
@@ -31,7 +41,8 @@ app.get("/:shortId", async (req, res) => {
 
     if (longUrl) {
       // still record analytics even if served from cache
-      await sendClickEvent(shortId, req.ip, { userAgent: req.headers['user-agent'], referrer: req.get('referer') });
+      const ip = req.ip || req.connection.remoteAddress || 'unknown';
+      await trackClick(shortId, ip, { userAgent: req.headers['user-agent'], referrer: req.get('referer') });
       return res.redirect(longUrl);
     }
 
@@ -46,7 +57,8 @@ app.get("/:shortId", async (req, res) => {
           .send("This link has expired and is no longer available.");
       }
       await redis.set(cacheKey, entry.longUrl, { EX: 3600 });
-      await sendClickEvent(shortId, req.ip, { userAgent: req.headers['user-agent'], referrer: req.get('referer') });
+      const ip = req.ip || req.connection.remoteAddress || 'unknown';
+      await trackClick(shortId, ip, { userAgent: req.headers['user-agent'], referrer: req.get('referer') });
       return res.redirect(entry.longUrl);
     } else {
       return res.status(404).send("Short URL not found");
@@ -60,9 +72,6 @@ app.get("/:shortId", async (req, res) => {
 const startServer = async () => {
   try {
     await connectDB();
-    initProducer().catch((err) => {
-      console.warn('Kafka init failed:', err?.message || err);
-    });
 
     const PORT = process.env.PORT || 5000;
     app.listen(PORT, () => {

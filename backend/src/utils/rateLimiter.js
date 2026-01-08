@@ -3,11 +3,12 @@ import redisClient from '../config/redis.js';
 const rateLimitMiddleware = (limit, windowSeconds) => {
   return async (req, res, next) => {
     try {
-      if (!redisClient || !redisClient.isOpen) {
+      // Check if Redis is connected
+      if (!redisClient || !redisClient.isReady) {
         return next();
       }
 
-      const ip = req.ip;
+      const ip = req.ip || req.connection.remoteAddress || 'unknown';
       const key = `rate:${ip}`;
 
       const current = await redisClient.incr(key);
