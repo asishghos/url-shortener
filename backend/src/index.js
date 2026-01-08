@@ -10,6 +10,10 @@ import { trackClick } from "./services/analyticsService.js";
 
 dotenv.config();
 const app = express();
+
+// Trust proxy to get correct IP and protocol headers (needed for Render, Heroku, etc.)
+app.set('trust proxy', true);
+
 app.use(
   cors({
     origin: "*",

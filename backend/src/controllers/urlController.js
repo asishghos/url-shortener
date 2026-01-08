@@ -63,7 +63,16 @@ const shortenUrl = async (req, res) => {
       return res.status(500).json({ error: 'Failed to generate unique short ID. Please try again.' });
     }
 
-    const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
+    // Determine base URL: use env variable, or construct from request headers, or fallback to localhost
+    let baseUrl;
+    if (process.env.BASE_URL) {
+      baseUrl = process.env.BASE_URL;
+    } else {
+      // Construct from request headers (works in production behind proxy)
+      const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+      const host = req.headers['x-forwarded-host'] || req.headers.host || `localhost:${process.env.PORT || 5000}`;
+      baseUrl = `${protocol}://${host}`;
+    }
     const shortUrl = `${baseUrl}/${shortId}`;
 
     const url = new Url({
