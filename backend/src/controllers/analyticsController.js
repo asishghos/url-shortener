@@ -50,20 +50,48 @@ export const getTopLinks = async (req, res) => {
 export const getDailyClicks = async (req, res) => {
   try {
     const { shortId, days = 7 } = req.query;
+    const numDays = parseInt(days, 10);
     
     if (shortId) {
       // Get daily clicks for a specific URL
-      const result = await getDailyClicksFromRedis(shortId, parseInt(days, 10));
+      const result = await getDailyClicksFromRedis(shortId, numDays);
       res.json(result.map(item => ({
         _id: { date: item.date },
         clicks: item.clicks
       })));
     } else {
       // Aggregate daily clicks across all URLs
-      // This would require iterating through all URL keys or using a separate Redis structure
-      // For now, return empty array if no shortId provided
-      // In production, you might want to maintain a separate aggregated daily clicks key
-      res.json([]);
+      // Get all URLs from database
+      const allUrls = await Url.find({}, 'shortId').lean();
+      
+      // Initialize aggregation map for the last N days
+      const today = new Date();
+      const aggregatedClicks = {};
+      
+      for (let i = numDays - 1; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+        aggregatedClicks[dateStr] = 0;
+      }
+      
+      // Get daily clicks for each URL and aggregate
+      for (const url of allUrls) {
+        const dailyClicks = await getDailyClicksFromRedis(url.shortId, numDays);
+        for (const dayData of dailyClicks) {
+          if (aggregatedClicks.hasOwnProperty(dayData.date)) {
+            aggregatedClicks[dayData.date] += dayData.clicks;
+          }
+        }
+      }
+      
+      // Convert to array format matching the expected response
+      const result = Object.keys(aggregatedClicks).map(date => ({
+        _id: { date },
+        clicks: aggregatedClicks[date]
+      })).sort((a, b) => new Date(a._id.date) - new Date(b._id.date));
+      
+      res.json(result);
     }
   } catch (error) {
     console.error('Error fetching daily clicks:', error);
